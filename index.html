@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Калькулятор</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  body {
+    min-height:100vh; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(circle at 30% 20%, #1e2a44, #0b0f18 70%);
+    font-family:-apple-system, "Segoe UI", Roboto, sans-serif; padding:16px;
+  }
+  .calc {
+    width:100%; max-width:360px; background:#151b28; border-radius:24px;
+    padding:20px; box-shadow:0 20px 60px rgba(0,0,0,.6), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  .screen {
+    background:#0d121c; border-radius:16px; padding:18px 16px; margin-bottom:16px;
+    text-align:right; overflow:hidden;
+  }
+  .history { color:#5b6b85; font-size:15px; height:20px; white-space:nowrap; overflow:hidden; }
+  .result { color:#eaf2ff; font-size:44px; font-weight:300; white-space:nowrap; overflow:hidden; }
+  .keys { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  button {
+    border:none; border-radius:14px; padding:18px 0; font-size:20px; cursor:pointer;
+    background:#232c3d; color:#eaf2ff; transition:.12s; font-family:inherit;
+  }
+  button:active { transform:scale(.95); }
+  .op { background:#2b3a55; color:#7fb2ff; }
+  .eq { background:linear-gradient(135deg,#3b82f6,#2563eb); color:#fff; }
+  .fn { background:#1b2333; color:#ff8a8a; }
+  .zero { grid-column:span 2; }
+</style>
+</head>
+<body>
+<div class="calc">
+  <div class="screen">
+    <div class="history" id="history"></div>
+    <div class="result" id="result">0</div>
+  </div>
+  <div class="keys">
+    <button class="fn" data-act="clear">AC</button>
+    <button class="fn" data-act="del">⌫</button>
+    <button class="op" data-op="%">%</button>
+    <button class="op" data-op="/">÷</button>
+
+    <button data-num="7">7</button>
+    <button data-num="8">8</button>
+    <button data-num="9">9</button>
+    <button class="op" data-op="*">×</button>
+
+    <button data-num="4">4</button>
+    <button data-num="5">5</button>
+    <button data-num="6">6</button>
+    <button class="op" data-op="-">−</button>
+
+    <button data-num="1">1</button>
+    <button data-num="2">2</button>
+    <button data-num="3">3</button>
+    <button class="op" data-op="+">+</button>
+
+    <button class="zero" data-num="0">0</button>
+    <button data-num=".">,</button>
+    <button class="eq" data-act="eq">=</button>
+  </div>
+</div>
+
+<script>
+let cur = "0", prev = null, op = null, fresh = false;
+const $r = document.getElementById("result");
+const $h = document.getElementById("history");
+
+function render() {
+  $r.textContent = cur.replace(".", ",");
+  $h.textContent = prev !== null ? prev.replace(".", ",") + " " + (op || "") : "";
+}
+function num(n) {
+  if (fresh) { cur = "0"; fresh = false; }
+  if (n === "." && cur.includes(".")) return;
+  cur = cur === "0" && n !== "." ? n : cur + n;
+  render();
+}
+function calc(a, b, o) {
+  a = parseFloat(a); b = parseFloat(b);
+  switch (o) {
+    case "+": return a + b;
+    case "-": return a - b;
+    case "*": return a * b;
+    case "/": return b === 0 ? "Ошибка" : a / b;
+    case "%": return a % b;
+  }
+}
+function setOp(o) {
+  if (op && !fresh) { cur = String(calc(prev, cur, op)); }
+  prev = cur; op = o; fresh = true; render();
+}
+function eq() {
+  if (op === null) return;
+  const res = calc(prev, cur, op);
+  $h.textContent = prev.replace(".", ",") + " " + op + " " + cur.replace(".", ",") + " =";
+  cur = String(res); prev = null; op = null; fresh = true;
+  $r.textContent = cur.replace(".", ",");
+}
+document.querySelectorAll("button").forEach(b => {
+  b.onclick = () => {
+    if (b.dataset.num !== undefined) num(b.dataset.num);
+    else if (b.dataset.op) setOp(b.dataset.op);
+    else if (b.dataset.act === "clear") { cur = "0"; prev = null; op = null; fresh = false; render(); }
+    else if (b.dataset.act === "del") { cur = cur.length > 1 ? cur.slice(0, -1) : "0"; render(); }
+    else if (b.dataset.act === "eq") eq();
+  };
+});
+document.addEventListener("keydown", e => {
+  if (/[0-9.]/.test(e.key)) num(e.key);
+  else if ("+-*/%".includes(e.key)) setOp(e.key);
+  else if (e.key === "Enter" || e.key === "=") eq();
+  else if (e.key === "Backspace") { cur = cur.length > 1 ? cur.slice(0, -1) : "0"; render(); }
+  else if (e.key === "Escape") { cur = "0"; prev = null; op = null; fresh = false; render(); }
+});
+render();
+</script>
+</body>
+</html>
